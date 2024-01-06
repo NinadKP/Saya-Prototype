@@ -6,14 +6,19 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 
 
 export default function Home() {
-  const { data: session } = useSession();
+  const {  data: session} = useSession();
   const [eventInput, setEventInput] = useState("");
   const [result, setResult] = useState("");
+  const [calendars, setCalendars] = useState("");
 
   const handleFetchCalendarData = async () => {
     const response = await fetch('/api/calendar');
     if (response.ok) {
-      console.log(response)
+      const data = await response.json();
+      const calendarData = data;
+      setCalendars(calendarData);
+
+      console.log("Calendars:", calendarData);
     }
   };
 
@@ -47,7 +52,23 @@ export default function Home() {
           <div>
           <div>
               {session ? (
-                <button onClick={handleFetchCalendarData} className="outline_btn">Fetch</button>
+                <><button onClick={handleFetchCalendarData} className="outline_btn">Fetch</button>
+                     {/* Display calendar data as a checklist */}
+                  <ul>
+                    {Array.isArray(calendars) ? (
+                      calendars.map((calendar) => (
+                        <li key={calendar.id}>
+                          <label>
+                            <input type="checkbox" />
+                            {calendar.summary}
+                          </label>
+                        </li>
+                      ))
+                    ) : (
+                      <li>No calendar data available</li>
+                    )}
+                  </ul>
+                </>
               ) : null}
             </div>
             <span>Calendar Events</span>
@@ -62,7 +83,7 @@ export default function Home() {
             placeholder="Edit events here.."
             value={eventInput}
             role="textbox" 
-            contenteditable="true"
+            contentEditable="true"
             onChange={(e) => setEventInput(e.target.value) }
           />
 

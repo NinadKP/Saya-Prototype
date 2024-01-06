@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
+
 import User from '@models/user';
 import { connectToDB } from '@utils/database';
 
@@ -11,14 +12,23 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar"
+          scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events"
         }
       }
     })
   ],
+  redirect: false,
   session: {
     jwt: true,
-    maxAge: 2592000
+    secret: 'b69efdb2dcf21c672d6012cec579914290c00404f2494f130c2ef39f96bea0fd6ad81adc97a30cde83381c39623faeac4e96afa3289f38b20d586cbee2db37fba308edcce388c7d06aa333c783f77481',
+    secure: process.env.NODE_ENV && process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax',
+    cookie: {
+      secure: process.env.NODE_ENV && process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
+    },
   },
   callbacks: {
 
@@ -35,9 +45,8 @@ const handler = NextAuth({
         session.user.id = sessionUser._id.toString();
       }
       
-
-      session.accessToken = token.token.account.access_token
-      console.log(session)
+      session.accessToken = token.token.account.access_token;
+      // console.log(session);
       return session;
     },
 

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { signIn, signOut, useSession, getProviders } from "next-auth/react";
 
 const Nav = () => {
-  const { data: session } = useSession();
+  const { data: session, status  } = useSession();
 
   const [providers, setProviders] = useState(null);
 
@@ -33,7 +33,7 @@ const Nav = () => {
 
       {/* Desktop Navigation */}
       <div className=''>
-        {session?.user ? (
+        {session? (
           <div className='flex gap-3 md:gap-5'>
             <button type='button' onClick={signOut} className='outline_btn'>
               Sign Out

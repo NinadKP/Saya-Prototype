@@ -1,43 +1,34 @@
-"use client";
-
+import { getToken } from "next-auth/jwt";
 import { google } from 'googleapis';
-import { getSession } from 'next-auth/client';
 
-const getGoogleCalendarEvents = async () => {
-  // Get the session from NextAuth
-  const session = await getSession();
+export async function GET(request) {
+  try {
+    const token = await getToken({ req: request });
 
-  // Create a new OAuth2 client
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({
-    access_token: session.accessToken,
-  });
+    if (!token) {
+      return new Response("No token", { status: 401 });
+    }
 
-  // Create a new Calendar API client
-  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    // Use the access token from the JWT
+    const accessToken = token.token.account.access_token;
 
-  // Make a request to the Calendar API to get the events
-  const response = await calendar.events.list({
-    calendarId: 'primary',
-    timeMin: new Date().toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  });
+    // Set up the OAuth2 client
+    const oAuth2Client = new google.auth.OAuth2();
+    oAuth2Client.setCredentials({ access_token: accessToken });
 
-  // Return the events
-  return response.data.items;
-};
+    // Create a Calendar API client
+    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-// // Example usage in an API route
-// export default async function handler(req, res) {
-//   const events = await getGoogleCalendarEvents();
-//   res.status(200).json(events);
-// }
+    // Fetch list of calendars
+    const calendarsResponse = await calendar.calendarList.list();
+    const calendars = calendarsResponse.data.items;
 
-import { NextResponse } from "next/server";
+    console.log("List of Calendars:", calendars);
 
-export async function GET(request) { 
-  const events = await getGoogleCalendarEvents();
-  return NextResponse.json({ events}, { status: 200 }); 
-};
+    // Return the list of calendars
+    return new Response(JSON.stringify(calendars), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch (error) {
+    console.error("Error retrieving calendars:", error);
+    return new Response("Internal Server Error", { status: 500 });
+  }
+}
