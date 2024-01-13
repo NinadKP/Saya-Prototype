@@ -23,7 +23,7 @@ export async function GET(request) {
     const calendarsResponse = await calendar.calendarList.list();
     const calendars = calendarsResponse.data.items;
 
-    console.log("List of Calendars:", calendars);
+    // console.log("List of Calendars:", calendars);
 
     // Return the list of calendars
     return new Response(JSON.stringify(calendars), { status: 200, headers: { 'Content-Type': 'application/json' } });

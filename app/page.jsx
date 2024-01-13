@@ -10,6 +10,11 @@ export default function Home() {
   const [eventInput, setEventInput] = useState("");
   const [result, setResult] = useState("");
   const [calendars, setCalendars] = useState("");
+  const [events, setEvents] = useState("");
+  const [selectedCalendars, setSelectedCalendars] = useState([]);
+  const [reasoning, setReasoning] = useState("");
+  const [report, setReport] = useState("");
+
 
   const handleFetchCalendarData = async () => {
     const response = await fetch('/api/calendar');
@@ -21,16 +26,77 @@ export default function Home() {
       console.log("Calendars:", calendarData);
     }
   };
+  
+  const handleCheckboxChange = (calendarId) => {
+    const isSelected = selectedCalendars.includes(calendarId);
+    if (isSelected) {
+      setSelectedCalendars(selectedCalendars.filter((id) => id !== calendarId));
+    } else {
+      setSelectedCalendars([...selectedCalendars, calendarId]);
+    }
+  };
+
+  const fetchEvents = async () => {
+    console.log('Selected Calendars:', selectedCalendars);
+    const queryParams = new URLSearchParams({
+      calendars: selectedCalendars.join(','), 
+    });
+  
+    const response = await fetch(`/api/events?${queryParams}`);
+    if (response.ok) {
+      const data = await response.json();
+      const eventData = data;
+      setEvents(eventData);
+    }
+  };
+
+  const generateReasoning = async () => {
+    const response = await fetch("/api/reason", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ eventlist: events, event: eventInput, context: result}),
+    });
+    const data = await response.json();
+
+    console.log("data.result.content", data.result.content);
+
+    let rawReason = data.result.content;
+
+    
+    setReasoning(data.result.content);
+
+  };
+
+  const generateReport = async () => {
+    const response = await fetch("/api/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ eventlist: events, event: eventInput, context: result, reason: reasoning}),
+    });
+    const data = await response.json();
+
+    console.log("data.result.content", data.result.content);
+
+    let rawReport = data.result.content;
+
+    
+    setReport(data.result.content);
+
+  };
 
   async function onSubmit(event) {
     event.preventDefault();
-   
+  
     const response = await fetch("/api/openai", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ event: eventInput }),
+      body: JSON.stringify({ eventlist: events, event: eventInput }),
     });
     const data = await response.json();
 
@@ -45,21 +111,27 @@ export default function Home() {
   }
 
   return (
-    <section className="w-full flex-center flex-col">
-      <h1 className='head_text'>Productivity Assistant Prototype</h1>
+    <section className="w-full ">
+      <div className='w-full flex-center flex-col'>
+      <h1 className=' head_text text-3xl'>Productivity Assistant Prototype</h1>
       <div className="w-full flex justify-between">
-        <div className="w-1/3 p-4 flex justify-center">
+        <div className="w-1/3 p-2 flex justify-center">
           <div>
-          <div>
+          <h1 class="text-2xl font-bold mb-4">Calendar Events</h1>
+          <div >
               {session ? (
-                <><button onClick={handleFetchCalendarData} className="outline_btn">Fetch</button>
+                <><button onClick={handleFetchCalendarData} className="outline_btn">Fetch Calendars</button>
                      {/* Display calendar data as a checklist */}
                   <ul>
                     {Array.isArray(calendars) ? (
                       calendars.map((calendar) => (
                         <li key={calendar.id}>
                           <label>
-                            <input type="checkbox" />
+                          <input
+                  type="checkbox"
+                  checked={selectedCalendars.includes(calendar.id)}
+                  onChange={() => handleCheckboxChange(calendar.id)}
+                />
                             {calendar.summary}
                           </label>
                         </li>
@@ -68,15 +140,26 @@ export default function Home() {
                       <li>No calendar data available</li>
                     )}
                   </ul>
+                  <button onClick={fetchEvents} className="outline_btn">Fetch Events</button>
                 </>
               ) : null}
             </div>
-            <span>Calendar Events</span>
+            <ol type="1" style={{ listStyleType: 'decimal' }}>
+              {Array.isArray(events) ? (
+                events.map((event) => (
+                  <li key={event.id}>
+                    <label>
+                    {new Date(event.start.dateTime).toLocaleString()} - {event.summary}
+                    </label>
+                  </li>
+                ))
+              ) : (
+                <li>No event data available</li>
+              )}
+            </ol>
             <form onSubmit={onSubmit}>
-          <input
-            className="text-sm text-gray-base w-full 
-                              mr-3 py-5 px-4 h-2 border 
-                              border-gray-200 rounded mb-2"
+            <input
+            className="form_input"
                               
             type="text"
             name="events"
@@ -96,46 +179,50 @@ export default function Home() {
         </form>
           </div>
         </div>
-        <div className="w-1/3 p-4 flex justify-center">
-          <p>Context</p>
-          {result ? (
-          <div className="relative w-full ">
-            <div
-              className="rounded-md border-spacing-2 border-slate-900 bg-slate-100 break-words max-w-500 overflow-x-auto  "
-            >
-              <pre className="">
-                <code
-                  className=""
-                  dangerouslySetInnerHTML={{ __html: result }}
-                />
-              </pre>
-            </div>
-            <div className="absolute top-0 right-0 mt-2 mr-2 cursor-pointer copy-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="icon icon-tabler icon-tabler-copy"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-                <path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"></path>
-              </svg>
-            </div>
-          </div>
+        <div className="w-1/3 p-2 flex justify-center">
+        <div>
+        <h1 class="text-2xl font-bold mb-4">Context</h1>
+          
+          {result ? (        
+              <textarea
+      className="form_textarea"
+      value={result}
+      onChange={(e) => setResult(e.target.value)}
+    />
         ) : null}
+        <button onClick={generateReasoning} className="black_btn">Generate Reasoning</button>
         </div>
-        <div className="w-1/3 p-4 flex-center">
-          Reasoning
+        </div>
+        <div className="w-1/3 p-2 flex justify-center">
+        <div>
+        <h1 class="text-2xl font-bold mb-4">Reasoning</h1>
+          
+          {result ? (        
+              <textarea
+      className="form_textarea"
+      value={reasoning}
+      onChange={(e) => setReasoning(e.target.value)}
+    />
+        ) : null}
+        <button onClick={generateReport} className="black_btn">Generate Report</button>
+        </div>
         </div>
       </div>
-
+      <div className="w-full flex flex-col items-center">
+      <h1 className='head_text mb-4'>{report ? ("Report") : null}</h1>
+  <div className="w-full">
+    {report ? (
+       // <div  dangerouslySetInnerHTML={{ __html: report }} />
+      <textarea
+        className=" w-full flex rounded-lg h-full min-h-24 mt-2 p-3 text-sm text-gray-500 outline-0"
+        value={report}
+        onChange={(e) => setReport(e.target.value)}
+      />
+      ) : null}
+  </div>
+</div>
+</div>
     </section>
+    
   )
 }

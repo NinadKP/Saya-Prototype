@@ -9,7 +9,7 @@
 */
 
 .main {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   position: fixed;
   display: flex;
@@ -73,7 +73,7 @@
 /* Tailwind Styles */
 
 .app {
-  @apply relative z-10 flex justify-center items-center flex-col max-w-7xl mx-auto sm:px-16 px-6;
+  @apply relative z-10 flex justify-center items-center flex-col w-full mx-auto sm:px-16 px-6;
 }
 
 .black_btn {
@@ -127,7 +127,7 @@
 
 /* Form Component */
 .form_textarea {
-  @apply w-full flex rounded-lg h-[200px] mt-2 p-3 text-sm text-gray-500 outline-0;
+  @apply w-full flex rounded-lg h-auto mt-2 p-3 text-sm text-gray-500 outline-0;
 }
 
 .form_input {
